@@ -39,9 +39,12 @@ class PostalsList extends StatelessWidget {
                                   actionPane: SlidableDrawerActionPane(),
                                   actionExtentRatio : .25,
                                   child : ListTile(
-                                      leading : Image.file(
+                                      leading : SizedBox(
+                                          width: 100,
+                                          height: 100,
+                                          child:Image.file(
                                           File(join(Avatar.docsDir.path, postal.id.toString()))
-                                      ),
+                                      )),
                                       title : Text("${postal.description}"),
                                       subtitle : postal.location.toString() == null ? null : Text("Location ${postal.location.toString()}"),
                                       onTap : () async {

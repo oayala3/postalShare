@@ -1,28 +1,44 @@
 import "dart:async";
 import "dart:io";
 import "package:flutter/material.dart";
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import "package:path/path.dart";
 import "package:scoped_model/scoped_model.dart";
 import "package:image_picker/image_picker.dart";
 import '../avatar.dart';
 import "../utils.dart" as utils;
 import 'package:location/location.dart';
+import 'map.dart';
 import "postals_db_worker.dart";
 import "postals_model.dart" show PostalsModel, postalsModel;
+import 'package:image/image.dart' as img;
+
 
 class PostalsEntry extends StatelessWidget {
 
+  var _newCameraPosition=CameraPosition(
+    target: LatLng(370,-122),
+    zoom: 11.5,);
+
+  GoogleMapController _googleMapController;
+  Marker _origin;
+  Marker _destination;
+  @override
+  void dispose(){
+    _googleMapController.dispose();
+  }
   final TextEditingController _locationEditingController = TextEditingController();
   final TextEditingController _descriptionEditingController = TextEditingController();
   final TextEditingController _timeEditingController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String _locationData;
+  var _location;
 
   PostalsEntry() {
     _descriptionEditingController.addListener(() {
       postalsModel.entityBeingEdited.description = _descriptionEditingController.text;
     });
-    _descriptionEditingController.addListener(() {
+    _locationEditingController.addListener(() {
       postalsModel.entityBeingEdited.location = _locationData;
     });
     _timeEditingController.addListener(() {
@@ -30,6 +46,23 @@ class PostalsEntry extends StatelessWidget {
     });
   }
   ///Update the Location and check if there is permission
+
+  CameraPosition _initialPosition(){
+    var start;
+    print(postalsModel.entityBeingEdited.location.toString());
+    if(postalsModel.entityBeingEdited.location!=null){
+      print("not null");
+      start = CameraPosition(
+          target: LatLng(double.parse(postalsModel.entityBeingEdited.location.split(":")[3]),double.parse(postalsModel.entityBeingEdited.location.split(":")[1])),
+          zoom: 11.5);
+    }else{
+      print("VERY null");
+      start = CameraPosition(
+          target: LatLng(37,-122),
+          zoom: 11.5);
+    }
+    return start;
+  }
   _updateLocation() async {
     Location location = new Location();
     bool _serviceEnabled;
@@ -47,12 +80,22 @@ class PostalsEntry extends StatelessWidget {
       }
     }
     var locationData = await location.getLocation();
-    _locationData="Longitud ${locationData.longitude}. Latitude ${locationData.latitude} ";
+    _location = locationData;
+    _locationData="Longitud: ${locationData.longitude}: Latitude: ${locationData.latitude}:";
     print(_locationData);
+    var newPosition = CameraPosition(
+        target: LatLng(locationData.latitude, locationData.longitude),
+        zoom: 16);
+    CameraUpdate update =CameraUpdate.newCameraPosition(newPosition);
+    CameraUpdate zoom = CameraUpdate.zoomTo(16);
+
+    _googleMapController.moveCamera(update);
   }
 
   Widget build(BuildContext inContext) {
     if (postalsModel.entityBeingEdited != null) {
+      print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");print("HERE");
+      print("printing location of postal model ${postalsModel.entityBeingEdited.location.toString()}");
       _descriptionEditingController.text = postalsModel.entityBeingEdited.description;
       _locationData = postalsModel.entityBeingEdited.location;
       _timeEditingController.text = postalsModel.entityBeingEdited.time;
@@ -90,10 +133,12 @@ class PostalsEntry extends StatelessWidget {
                             ),
                             FlatButton(
                                 child : Text("Delete"),
-                                onPressed : () { _delete(inContext, inModel); }
-                            )
+                                onPressed : () {},
+                            ),
+
                           ]
-                      )),
+                      ),
+                   ),
                   body : Form(
                       key : _formKey,
                       child : ListView(
@@ -137,7 +182,29 @@ class PostalsEntry extends StatelessWidget {
                             ),
                             FlatButton(
                                 child : Text("UpedateLocation"),
-                                onPressed : () { _updateLocation(); }
+                                onPressed : (){
+                                  //Navigator.push(
+                                   // inContext,
+                                   // MaterialPageRoute(builder: (context) => MapScreen()),
+                                 // );
+                                _updateLocation();
+                                print("updatingLocaion");
+                                ()=>_googleMapController.animateCamera(CameraUpdate.newCameraPosition(_newCameraPosition));
+                                }
+                            ),
+                            SizedBox(
+                                width: 500,  // or use fixed size like 200
+                                height: 300,
+                                child : GoogleMap(
+                                    myLocationButtonEnabled: false,
+                                    zoomControlsEnabled: false,
+                                    initialCameraPosition: _initialPosition(),
+                                    onMapCreated: (controller) =>_googleMapController= controller,
+                                    markers:{
+                                      if(_origin != null) _origin,
+                                      if(_destination != null) _destination
+                                    },
+                                )
                             ),
                           ]
                       )
@@ -159,9 +226,11 @@ class PostalsEntry extends StatelessWidget {
                         GestureDetector(
                             child: Text("Take a picture"),
                             onTap: () async {
-                              var cameraImage = await ImagePicker.pickImage(source: ImageSource.camera);
-                              if (cameraImage != null) {
-                                cameraImage.copySync(
+                              final _picker = ImagePicker();
+                              PickedFile image = await _picker.getImage(source: ImageSource.camera);
+                              File file = File(image.path);
+                              if (image != null) {
+                                file.copySync(
                                     join(Avatar.docsDir.path, "image"));
                                 postalsModel.triggerRebuild();
                               }
