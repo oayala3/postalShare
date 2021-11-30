@@ -32,7 +32,6 @@ class PostalsList extends StatelessWidget {
                       itemBuilder : (BuildContext inBuildContext, int inIndex) {
                         Postal postal = postalsModel.entityList[inIndex];
                         File image = File(join(Avatar.docsDir.path, postal.id.toString()));
-                        bool imageExists = image.existsSync();
                         return Column(
                             children : [
                               Slidable(
@@ -43,7 +42,7 @@ class PostalsList extends StatelessWidget {
                                           width: 100,
                                           height: 100,
                                           child:Image.file(
-                                          File(join(Avatar.docsDir.path, postal.id.toString()))
+                                          image
                                       )),
                                       title : Text("${postal.description}"),
                                       subtitle : postal.location.toString() == null ? null : Text("Location ${postal.location.toString()}"),

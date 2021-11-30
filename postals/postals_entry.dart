@@ -131,10 +131,6 @@ class PostalsEntry extends StatelessWidget {
                                 child : Text("Save"),
                                 onPressed : () { _save(inContext, inModel); }
                             ),
-                            FlatButton(
-                                child : Text("Delete"),
-                                onPressed : () {},
-                            ),
 
                           ]
                       ),
@@ -229,7 +225,7 @@ class PostalsEntry extends StatelessWidget {
                               final _picker = ImagePicker();
                               PickedFile image = await _picker.getImage(source: ImageSource.camera);
                               File file = File(image.path);
-                              if (image != null) {
+                              if (file != null) {
                                 file.copySync(
                                     join(Avatar.docsDir.path, "image"));
                                 postalsModel.triggerRebuild();
